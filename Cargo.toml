@@ -6,7 +6,7 @@ authors = ["Abdulbaasit <>"]
 description = "A key-value store"
 
 [dependencies]
-clap = "4.5.38"
+clap = { version = "4.5.38", features = ["derive"] }
 
 [dev-dependencies]
 assert_cmd = "2.0.17"
