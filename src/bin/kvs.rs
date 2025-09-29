@@ -1,6 +1,7 @@
 use std::process::exit;
 
 use clap::{Parser, Subcommand};
+use kvs::Result;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -31,7 +32,7 @@ enum Commands {
     },
 }
 
-fn main() {
+fn main() -> Result<()> {
     let cli = Cli::parse();
     match &cli.command {
         Commands::Set { key, value } => {

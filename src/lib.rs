@@ -1,6 +1,20 @@
 #![deny(missing_docs)]
 //! A simple in-memory key/value store that maps strings to strings
-use std::collections::HashMap;
+use std::{collections::HashMap, io, result::Result as StdResult};
+
+use failure::Fail;
+
+
+/// KvsErrors 
+#[derive(Fail, Debug)]
+pub enum KvsError {
+    /// IO Error
+    #[fail(display = "{}", _0)]
+    Io(#[cause] io::Error),
+}
+
+/// KVS Result type
+pub type Result<T> = StdResult<T, KvsError>;
 
 /// The main store
 pub struct KvStore {
