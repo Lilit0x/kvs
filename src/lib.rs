@@ -1,21 +1,16 @@
 #![deny(missing_docs)]
 //! A simple in-memory key/value store that maps strings to strings
-use std::{
-    collections::HashMap,
-    fs::File,
-    io::{self, BufReader, BufWriter},
-    path::{Path, PathBuf},
-    result::Result as StdResult,
-};
+use std::{collections::HashMap, fs::File, path::Path, result::Result as StdResult};
 
 use failure::Fail;
+use serde::{Deserialize, Serialize};
 
 /// KvsErrors
 #[derive(Fail, Debug)]
 pub enum KvsError {
     /// IO Error
     #[fail(display = "{}", _0)]
-    Io(#[cause] io::Error),
+    Io(#[cause] std::io::Error),
 }
 
 impl From<std::io::Error> for KvsError {
@@ -28,20 +23,18 @@ impl From<std::io::Error> for KvsError {
 pub type Result<T> = StdResult<T, KvsError>;
 
 /// The main store
-pub struct KvStore<'a> {
+pub struct KvStore {
     store: HashMap<String, String>,
-    log_file: PathBuf,
-    reader: BufReader<& 'a File>,
-    writer: BufWriter<& 'a File>,
+    log_file: File,
 }
 
-impl Default for KvStore<'_> {
+impl Default for KvStore {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl KvStore<'_> {
+impl KvStore {
     /// Initialize a new insyance of the store
     /// ```rust
     /// use kvs::KvStore;
@@ -57,16 +50,12 @@ impl KvStore<'_> {
     /// Create a KvStore from a file
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
         let f = File::open(path)?;
-        let reader = BufReader::new(&f);
-        let writer = BufWriter::new(&f);
 
         let store = Self {
-            log_file: path.as_ref().to_path_buf(),
-            reader,
-            writer,
+            log_file: f,
             store: HashMap::new(),
         };
-        
+
         Ok(store)
     }
 
@@ -105,4 +94,11 @@ impl KvStore<'_> {
     pub fn remove(&mut self, key: String) {
         self.store.remove(&key);
     }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+enum Command {
+    Set { key: String, value: String },
+    Get { key: String },
+    Rm { key: String },
 }
