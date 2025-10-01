@@ -1,6 +1,6 @@
 #![deny(missing_docs)]
 //! A simple in-memory key/value store that maps strings to strings
-use std::{collections::HashMap, io, result::Result as StdResult};
+use std::{collections::HashMap, io, path::{Path, PathBuf}, result::Result as StdResult};
 
 use failure::Fail;
 
@@ -19,6 +19,7 @@ pub type Result<T> = StdResult<T, KvsError>;
 /// The main store
 pub struct KvStore {
     store: HashMap<String, String>,
+    log_file: PathBuf
 }
 
 impl Default for KvStore {
@@ -36,7 +37,13 @@ impl KvStore {
     pub fn new() -> Self {
         Self {
             store: HashMap::new(),
+            log_file: Default::default()
         }
+    }
+
+    /// Create a KvStore from a file 
+    pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
+        todo!()
     }
 
     /// Set the value of a string key to a string
