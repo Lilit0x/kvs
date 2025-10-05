@@ -1,6 +1,12 @@
 #![deny(missing_docs)]
 //! A simple in-memory key/value store that maps strings to strings
-use std::{collections::HashMap, fs::File, path::Path, result::Result as StdResult};
+use std::{
+    collections::HashMap,
+    fs::OpenOptions,
+    io::{BufWriter, Seek, SeekFrom},
+    path::{Path, PathBuf},
+    result::Result as StdResult,
+};
 
 use failure::Fail;
 use serde::{Deserialize, Serialize};
@@ -11,6 +17,9 @@ pub enum KvsError {
     /// IO Error
     #[fail(display = "{}", _0)]
     Io(#[cause] std::io::Error),
+    /// Serde Error
+    #[fail(display = "{}", _0)]
+    Json(#[cause] serde_json::Error),
 }
 
 impl From<std::io::Error> for KvsError {
@@ -19,13 +28,19 @@ impl From<std::io::Error> for KvsError {
     }
 }
 
+impl From<serde_json::Error> for KvsError {
+    fn from(value: serde_json::Error) -> Self {
+        KvsError::Json(value)
+    }
+}
+
 /// KVS Result type
 pub type Result<T> = StdResult<T, KvsError>;
 
 /// The main store
 pub struct KvStore {
-    store: HashMap<String, String>,
-    log_file: File,
+    store: HashMap<String, u64>,
+    log_file: PathBuf,
 }
 
 impl Default for KvStore {
@@ -49,10 +64,8 @@ impl KvStore {
 
     /// Create a KvStore from a file
     pub fn open<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let f = File::open(path)?;
-
         let store = Self {
-            log_file: f,
+            log_file: path.as_ref().to_path_buf(),
             store: HashMap::new(),
         };
 
@@ -66,8 +79,23 @@ impl KvStore {
     /// store.set("key1".to_owned(), "value1".to_owned());
     /// assert_eq!(store.get("key1".to_owned()), Some("value1".to_owned()));
     /// ```
-    pub fn set(&mut self, key: String, value: String) {
-        self.store.insert(key, value);
+    pub fn set(&mut self, key: String, value: String) -> Result<()> {
+        let cmd = Command::Set {
+            key: key.clone(),
+            value,
+        };
+        let val = serde_json::to_value(cmd)?;
+
+        let mut log_file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&self.log_file)?;
+        let writer = BufWriter::new(&log_file);
+        serde_json::to_writer(writer, &val);
+        let offset = log_file.seek(SeekFrom::Current(0))?;
+
+        self.store.insert(key, offset);
+        Ok(())
     }
 
     /// Get the string value of a given string key
@@ -79,8 +107,9 @@ impl KvStore {
     /// assert_eq!(store.get("key1".to_owned()), Some("value1".to_owned()));
     /// assert_eq!(store.get("key2".to_owned()), Some("value2".to_owned()));
     /// ```
-    pub fn get(&self, key: String) -> Option<String> {
-        self.store.get(&key).cloned()
+    pub fn get(&self, key: String) -> Result<Option<String>> {
+        self.store.get(&key).cloned();
+        todo!()
     }
 
     /// Remove a given key
@@ -91,8 +120,9 @@ impl KvStore {
     /// store.remove("key1".to_owned());
     /// assert_eq!(store.get("key1".to_owned()), None);
     /// ```
-    pub fn remove(&mut self, key: String) {
+    pub fn remove(&mut self, key: String) -> Result<()> {
         self.store.remove(&key);
+        Ok(())
     }
 }
 
