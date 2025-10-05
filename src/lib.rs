@@ -84,14 +84,15 @@ impl KvStore {
             key: key.clone(),
             value,
         };
-        let val = serde_json::to_value(cmd)?;
+        let val = serde_json::to_string(&cmd)?;
 
         let mut log_file = OpenOptions::new()
             .read(true)
             .write(true)
             .open(&self.log_file)?;
         let writer = BufWriter::new(&log_file);
-        serde_json::to_writer(writer, &val);
+
+        serde_json::to_writer(writer, &val)?;
         let offset = log_file.seek(SeekFrom::Current(0))?;
 
         self.store.insert(key, offset);
