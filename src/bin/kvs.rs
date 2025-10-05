@@ -1,13 +1,16 @@
-use std::process::exit;
+use std::{path::PathBuf, process::exit};
 
 use clap::{Parser, Subcommand};
-use kvs::Result;
+use kvs::{KvStore, Result};
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
+
+    #[arg(short, long)]
+    log: PathBuf,
 }
 
 #[derive(Debug, Subcommand)]
@@ -36,8 +39,12 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     match &cli.command {
         Commands::Set { key, value } => {
-            eprintln!("unimplemented");
-            exit(1);
+            let mut store = KvStore::open(&cli.log)?;
+            if let Err(err) = store.set(key.to_string(), value.to_string()) {
+                eprintln!("{err}");
+                exit(1);
+            }
+            exit(0);
         }
         Commands::Get { key } => {
             eprintln!("unimplemented");

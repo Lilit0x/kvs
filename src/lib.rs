@@ -3,7 +3,7 @@
 use std::{
     collections::HashMap,
     fs::OpenOptions,
-    io::{BufWriter, Seek, SeekFrom},
+    io::{BufWriter, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     result::Result as StdResult,
 };
@@ -89,11 +89,13 @@ impl KvStore {
         let mut log_file = OpenOptions::new()
             .read(true)
             .write(true)
+            .create(true)
             .open(&self.log_file)?;
         let writer = BufWriter::new(&log_file);
 
         serde_json::to_writer(writer, &val)?;
         let offset = log_file.seek(SeekFrom::Current(0))?;
+        log_file.flush()?;
 
         self.store.insert(key, offset);
         Ok(())
