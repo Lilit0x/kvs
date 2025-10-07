@@ -2,7 +2,7 @@
 //! A simple in-memory key/value store that maps strings to strings
 use std::{
     collections::HashMap,
-    fs::OpenOptions,
+    fs::{File, OpenOptions},
     io::{BufWriter, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     result::Result as StdResult,
@@ -87,9 +87,8 @@ impl KvStore {
         let val = serde_json::to_string(&cmd)?;
 
         let mut log_file = OpenOptions::new()
-            .read(true)
-            .write(true)
             .create(true)
+            .append(true)
             .open(&self.log_file)?;
         let writer = BufWriter::new(&log_file);
 
@@ -98,6 +97,9 @@ impl KvStore {
         log_file.flush()?;
 
         self.store.insert(key, offset);
+        // TODO: the file offset is the end, I don't know how I'll read to get the contents of the file
+        // do I need to delimit with a new line?
+        println!("{:#?}", &self.store);
         Ok(())
     }
 
@@ -111,7 +113,7 @@ impl KvStore {
     /// assert_eq!(store.get("key2".to_owned()), Some("value2".to_owned()));
     /// ```
     pub fn get(&self, key: String) -> Result<Option<String>> {
-        self.store.get(&key).cloned();
+        let _key = self.store.get(&key).cloned();
         todo!()
     }
 
@@ -124,7 +126,11 @@ impl KvStore {
     /// assert_eq!(store.get("key1".to_owned()), None);
     /// ```
     pub fn remove(&mut self, key: String) -> Result<()> {
-        self.store.remove(&key);
+        if let Some(_) = self.store.remove(&key) {
+            let val = serde_json::to_string(&Command::Rm { key })?;
+            let writer = BufWriter::new(File::open(&self.log_file)?);
+            serde_json::to_writer(writer, &val)?;
+        };
         Ok(())
     }
 }
