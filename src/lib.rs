@@ -90,16 +90,19 @@ impl KvStore {
             .create(true)
             .append(true)
             .open(&self.log_file)?;
+        // get the beginning of where the write will occur.
+        // so, if we want to get an element from the index, we just take everything from that offset
+        // up to the next "new line", since that's the delimeter
+        let offset = log_file.seek(SeekFrom::Current(0))?;
         let writer = BufWriter::new(&log_file);
 
         serde_json::to_writer(writer, &val)?;
-        let offset = log_file.seek(SeekFrom::Current(0))?;
+
+        // the delimter should be a new line
+        writeln!(log_file)?;
         log_file.flush()?;
 
         self.store.insert(key, offset);
-        // TODO: the file offset is the end, I don't know how I'll read to get the contents of the file
-        // do I need to delimit with a new line?
-        // println!("{:#?}", &self.store);
         Ok(())
     }
 
