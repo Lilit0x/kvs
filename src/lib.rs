@@ -3,13 +3,14 @@
 use std::{
     collections::HashMap,
     fs::{File, OpenOptions},
-    io::{BufWriter, Seek, SeekFrom, Write},
+    io::{BufRead, BufReader, BufWriter, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     result::Result as StdResult,
 };
 
 use failure::Fail;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 /// KvsErrors
 #[derive(Fail, Debug)]
@@ -116,6 +117,19 @@ impl KvStore {
     /// assert_eq!(store.get("key2".to_owned()), Some("value2".to_owned()));
     /// ```
     pub fn get(&self, key: String) -> Result<Option<String>> {
+        let log_file = File::open(&self.log_file)?;
+        let lines = BufReader::new(log_file).lines();
+        
+        // so, I need to get the file offset of each line too (that is, where the line begins)
+        // depending on the command, if it is set, i insert into the map, it is remove, I remove from the map
+        // I don't know what to do with Get yet
+        for line in lines {
+            let line = line?;
+            let command: Command = serde_json::from_str(&line)?;
+            println!("{:#?}", command);
+            self.store.insert(k, v)
+        }
+
         let _key = self.store.get(&key).cloned();
         todo!()
     }

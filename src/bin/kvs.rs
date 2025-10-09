@@ -47,7 +47,8 @@ fn main() -> Result<()> {
             exit(0);
         }
         Commands::Get { key } => {
-            eprintln!("unimplemented");
+            let mut store = KvStore::open(&cli.log)?;
+            store.get(key.to_string())?;
             exit(1);
         }
         Commands::Rm { key } => {
