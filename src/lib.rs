@@ -99,7 +99,7 @@ impl KvStore {
         self.store.insert(key, offset);
         // TODO: the file offset is the end, I don't know how I'll read to get the contents of the file
         // do I need to delimit with a new line?
-        println!("{:#?}", &self.store);
+        // println!("{:#?}", &self.store);
         Ok(())
     }
 

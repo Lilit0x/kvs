@@ -9,7 +9,7 @@ struct Cli {
     #[command(subcommand)]
     command: Commands,
 
-    #[arg(short, long)]
+    #[arg(short, long, default_value = "test.log")]
     log: PathBuf,
 }
 
@@ -51,7 +51,7 @@ fn main() -> Result<()> {
             exit(1);
         }
         Commands::Rm { key } => {
-            eprintln!("unimplemented");
+            let mut store = KvStore::open(&cli.log)?;
             exit(1);
         }
     }
